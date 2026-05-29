@@ -10,6 +10,36 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "app_preferences")
 
+
+
+class PreferencesManager(private val context: Context) {
+    companion object {
+        private val KEY_USERNAME = stringPreferencesKey("username")
+        private val KEY_DARK_MODE = booleanPreferencesKey("is_dark_mode")
+    }
+
+    val usernameFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_USERNAME] ?: "Guest"
+    }
+
+    val isDarkModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_DARK_MODE] ?: false
+    }
+
+    suspend fun saveUsername(username: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_USERNAME] = username
+        }
+    }
+
+    suspend fun saveDarkMode(isDark: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_DARK_MODE] = isDark
+        }
+    }
+}
+
+
 /* OLD SHAREDPREFERENCES IMPLEMENTATION
 class PreferencesManager(context: Context) {
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(
@@ -39,30 +69,3 @@ class PreferencesManager(context: Context) {
     }
 }
 */
-
-class PreferencesManager(private val context: Context) {
-    companion object {
-        private val KEY_USERNAME = stringPreferencesKey("username")
-        private val KEY_DARK_MODE = booleanPreferencesKey("is_dark_mode")
-    }
-
-    val usernameFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_USERNAME] ?: "Guest"
-    }
-
-    val isDarkModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[KEY_DARK_MODE] ?: false
-    }
-
-    suspend fun saveUsername(username: String) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_USERNAME] = username
-        }
-    }
-
-    suspend fun saveDarkMode(isDark: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_DARK_MODE] = isDark
-        }
-    }
-}

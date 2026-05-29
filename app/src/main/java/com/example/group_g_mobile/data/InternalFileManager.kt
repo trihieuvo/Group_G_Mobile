@@ -12,10 +12,7 @@ class InternalFileManager(private val context: Context) {
         private const val AVATAR_FILENAME = "avatar.jpg"
     }
 
-    /**
-     * Saves an image from the given Uri to internal storage.
-     * Returns the absolute path of the saved file, or null if failed.
-     */
+
     fun saveAvatar(uri: Uri): String? {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
@@ -34,24 +31,16 @@ class InternalFileManager(private val context: Context) {
         }
     }
 
-    /**
-     * Gets the file pointing to the saved avatar image.
-     */
+
     fun getAvatarFile(): File {
         return File(context.filesDir, AVATAR_FILENAME)
     }
 
-    /**
-     * Returns the absolute path of the avatar file if it exists, or null.
-     */
     fun getAvatarPath(): String? {
         val file = getAvatarFile()
         return if (file.exists()) file.absolutePath else null
     }
 
-    /**
-     * Deletes the saved avatar.
-     */
     fun deleteAvatar(): Boolean {
         val file = getAvatarFile()
         return if (file.exists()) file.delete() else false

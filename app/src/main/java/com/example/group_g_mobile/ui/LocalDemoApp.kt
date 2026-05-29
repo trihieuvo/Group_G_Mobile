@@ -1,7 +1,6 @@
 package com.example.group_g_mobile.ui
 
 import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,9 +44,8 @@ fun LocalDemoApp(
     repository: NoteRepository,
     api: MockServerApi,
     isDarkTheme: Boolean,
-    onThemeChange: (Boolean) -> Unit
+    onThemeChange: (Boolean) -> Unit,
 ) {
-    val coroutineScope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(0) }
     
     val networkAvailable by api.isNetworkAvailable.collectAsState()
@@ -365,7 +363,6 @@ fun ProfileTab(
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
     val currentUsername by preferencesManager.usernameFlow.collectAsState(initial = "Guest")

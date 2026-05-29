@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 class NoteRepository(
     private val noteDao: NoteDao,
     private val api: MockServerApi,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
 ) {
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
     val notes: StateFlow<List<Note>> = _notes.asStateFlow()
@@ -75,7 +75,7 @@ class NoteRepository(
         } catch (e: Exception) {
             // Update local DB: Sync failed (either due to network or server error)
             noteDao.updateNoteSyncStatus(id, isSynced = false, syncFailed = true)
-            SyncLogger.log("Local DB: Note ID #$id upload failed. Saved locally for retry.")
+            SyncLogger.log("Local DB: Note ID #$id upload failed: ${e.message}")
         } finally {
             // Refresh the local list to update UI with correct status icons
             loadNotesFromDb()

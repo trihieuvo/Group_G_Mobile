@@ -20,7 +20,7 @@ data class NoteEntity(
     val isSynced: Boolean,
     
     @ColumnInfo(name = "sync_failed")
-    val syncFailed: Boolean = false
+    val syncFailed: Boolean = false,
 )
 
 fun NoteEntity.toNote(): Note {

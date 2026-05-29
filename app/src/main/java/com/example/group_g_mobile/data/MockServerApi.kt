@@ -28,7 +28,7 @@ class MockServerApi {
      * Throws exceptions depending on mock configuration to demonstrate offline/error handling.
      */
     suspend fun uploadNote(content: String, timestamp: Long): Boolean {
-        SyncLogger.log("API: Connecting to server...")
+        SyncLogger.log("API: Connecting to server (Time: $timestamp)...")
         // Simulate network delay
         delay(1500)
 
