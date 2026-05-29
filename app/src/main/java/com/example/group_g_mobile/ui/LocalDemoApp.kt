@@ -366,7 +366,15 @@ fun ProfileTab(
     onThemeChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    var username by remember { mutableStateOf(preferencesManager.getUsername()) }
+    val coroutineScope = rememberCoroutineScope()
+    
+    val currentUsername by preferencesManager.usernameFlow.collectAsState(initial = "Guest")
+    var usernameInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(currentUsername) {
+        usernameInput = currentUsername
+    }
+
     var avatarPath by remember { mutableStateOf(fileManager.getAvatarPath()) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -453,11 +461,13 @@ fun ProfileTab(
 
         // Username Input (Key-Value)
         OutlinedTextField(
-            value = username,
+            value = usernameInput,
             onValueChange = {
-                username = it
-                preferencesManager.saveUsername(it)
-                SyncLogger.log("Key-Value: Username updated to \"$it\" in SharedPreferences")
+                usernameInput = it
+                coroutineScope.launch {
+                    preferencesManager.saveUsername(it)
+                }
+                SyncLogger.log("Key-Value: Username updated to \"$it\" in DataStore")
             },
             label = { Text("Tên người dùng (Username)") },
             modifier = Modifier.fillMaxWidth(),
@@ -484,8 +494,10 @@ fun ProfileTab(
                     checked = isDarkTheme,
                     onCheckedChange = {
                         onThemeChange(it)
-                        preferencesManager.saveDarkMode(it)
-                        SyncLogger.log("Key-Value: Theme changed to ${if (it) "DARK" else "LIGHT"} in SharedPreferences")
+                        coroutineScope.launch {
+                            preferencesManager.saveDarkMode(it)
+                        }
+                        SyncLogger.log("Key-Value: Theme changed to ${if (it) "DARK" else "LIGHT"} in DataStore")
                     }
                 )
             }

@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class NoteRepository(
-    private val dbHelper: DatabaseHelper,
+    private val noteDao: NoteDao,
     private val api: MockServerApi,
     private val scope: CoroutineScope
 ) {
@@ -17,13 +17,13 @@ class NoteRepository(
     val notes: StateFlow<List<Note>> = _notes.asStateFlow()
 
     init {
-        // Load initial data from SQLite
+        // Load initial data from Room
         loadNotesFromDb()
     }
 
     private fun loadNotesFromDb() {
         scope.launch(Dispatchers.IO) {
-            val list = dbHelper.getAllNotes()
+            val list = noteDao.getAllNotes().map { it.toNote() }
             _notes.value = list
         }
     }
@@ -34,14 +34,16 @@ class NoteRepository(
      */
     suspend fun addNote(content: String) = withContext(Dispatchers.IO) {
         val timestamp = System.currentTimeMillis()
-        SyncLogger.log("Local DB: Saving note to SQLite...")
+        SyncLogger.log("Local DB: Saving note to Room...")
         
-        // 1. Save to local SQLite first (Offline-First)
-        val id = dbHelper.insertNote(
-            content = content,
-            timestamp = timestamp,
-            isSynced = false,
-            syncFailed = false
+        // 1. Save to local Room first (Offline-First)
+        val id = noteDao.insertNote(
+            NoteEntity(
+                content = content,
+                timestamp = timestamp,
+                isSynced = false,
+                syncFailed = false
+            )
         )
         
         SyncLogger.log("Local DB: Saved note ID #$id locally (Status: Pending 🕒)")
@@ -58,21 +60,21 @@ class NoteRepository(
     /**
      * Tries to sync a specific note to the server.
      */
-    private suspend fun syncNoteToServer(id: Int, content: String, timestamp: Long) {
+    private suspend fun syncNoteToServer(id: Int, content: String, timestamp: Long) = withContext(Dispatchers.IO) {
         try {
             SyncLogger.log("Repository: Uploading note ID #$id to server...")
             val success = api.uploadNote(content, timestamp)
             if (success) {
                 // Update local DB: Synced successfully
-                dbHelper.updateNoteSyncStatus(id, isSynced = true, syncFailed = false)
+                noteDao.updateNoteSyncStatus(id, isSynced = true, syncFailed = false)
                 SyncLogger.log("Local DB: Updated Note ID #$id -> Synced (✔️)")
             } else {
-                dbHelper.updateNoteSyncStatus(id, isSynced = false, syncFailed = true)
+                noteDao.updateNoteSyncStatus(id, isSynced = false, syncFailed = true)
                 SyncLogger.log("Local DB: Updated Note ID #$id -> Sync Failed (❌)")
             }
         } catch (e: Exception) {
             // Update local DB: Sync failed (either due to network or server error)
-            dbHelper.updateNoteSyncStatus(id, isSynced = false, syncFailed = true)
+            noteDao.updateNoteSyncStatus(id, isSynced = false, syncFailed = true)
             SyncLogger.log("Local DB: Note ID #$id upload failed. Saved locally for retry.")
         } finally {
             // Refresh the local list to update UI with correct status icons
@@ -81,11 +83,11 @@ class NoteRepository(
     }
 
     /**
-     * Scans SQLite for all unsynced notes and attempts to sync them.
+     * Scans Room for all unsynced notes and attempts to sync them.
      * Usually called when network status changes back to online.
      */
     suspend fun syncPendingNotes() = withContext(Dispatchers.IO) {
-        val localNotes = dbHelper.getAllNotes()
+        val localNotes = noteDao.getAllNotes().map { it.toNote() }
         val pendingNotes = localNotes.filter { !it.isSynced }
         
         if (pendingNotes.isEmpty()) {
@@ -96,7 +98,7 @@ class NoteRepository(
         SyncLogger.log("Repository: Found ${pendingNotes.size} pending notes. Starting sync...")
         for (note in pendingNotes) {
             // Reset failure state to show it is attempting to sync again
-            dbHelper.updateNoteSyncStatus(note.id, isSynced = false, syncFailed = false)
+            noteDao.updateNoteSyncStatus(note.id, isSynced = false, syncFailed = false)
             loadNotesFromDb()
 
             syncNoteToServer(note.id, note.content, note.timestamp)
@@ -107,7 +109,7 @@ class NoteRepository(
      * Deletes a note locally.
      */
     suspend fun deleteNote(id: Int) = withContext(Dispatchers.IO) {
-        dbHelper.deleteNote(id)
+        noteDao.deleteNote(id)
         SyncLogger.log("Local DB: Deleted Note ID #$id")
         loadNotesFromDb()
     }

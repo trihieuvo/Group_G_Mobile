@@ -11,12 +11,14 @@ import androidx.lifecycle.lifecycleScope
 import com.example.group_g_mobile.data.*
 import com.example.group_g_mobile.ui.LocalDemoApp
 import com.example.group_g_mobile.ui.theme.Group_G_MobileTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var fileManager: InternalFileManager
-    private lateinit var dbHelper: DatabaseHelper
+    private lateinit var appDatabase: AppDatabase
+    private lateinit var noteDao: NoteDao
     private lateinit var mockServerApi: MockServerApi
     private lateinit var noteRepository: NoteRepository
 
@@ -26,23 +28,22 @@ class MainActivity : ComponentActivity() {
         // Initialize Storage Managers & Data Layers
         preferencesManager = PreferencesManager(applicationContext)
         fileManager = InternalFileManager(applicationContext)
-        dbHelper = DatabaseHelper(applicationContext)
+        appDatabase = AppDatabase.getDatabase(applicationContext)
+        noteDao = appDatabase.noteDao()
         mockServerApi = MockServerApi()
-        noteRepository = NoteRepository(dbHelper, mockServerApi, lifecycleScope)
+        noteRepository = NoteRepository(noteDao, mockServerApi, lifecycleScope)
 
         // Initialize logging
         SyncLogger.clear()
         SyncLogger.log("SYSTEM: Application started.")
-        SyncLogger.log("Key-Value: Loaded SharedPreferences.")
+        SyncLogger.log("Key-Value: Loaded Preferences DataStore.")
         SyncLogger.log("File System: Ready.")
-        SyncLogger.log("Database: SQLite database connection opened.")
+        SyncLogger.log("Database: Room database connection opened.")
 
         enableEdgeToEdge()
         
         setContent {
-            var isDarkTheme by remember { 
-                mutableStateOf(preferencesManager.isDarkMode()) 
-            }
+            val isDarkTheme by preferencesManager.isDarkModeFlow.collectAsState(initial = false)
 
             Group_G_MobileTheme(darkTheme = isDarkTheme, dynamicColor = false) {
                 LocalDemoApp(
@@ -51,7 +52,11 @@ class MainActivity : ComponentActivity() {
                     repository = noteRepository,
                     api = mockServerApi,
                     isDarkTheme = isDarkTheme,
-                    onThemeChange = { isDark -> isDarkTheme = isDark }
+                    onThemeChange = { isDark ->
+                        lifecycleScope.launch {
+                            preferencesManager.saveDarkMode(isDark)
+                        }
+                    }
                 )
             }
         }

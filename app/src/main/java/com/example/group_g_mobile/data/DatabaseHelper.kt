@@ -1,3 +1,4 @@
+/*
 package com.example.group_g_mobile.data
 
 import android.content.ContentValues
@@ -37,10 +38,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         onCreate(db)
     }
 
-    /**
-     * Insert a new note into SQLite.
-     * Returns the inserted row ID, or -1 if an error occurred.
-     */
+   
+
     fun insertNote(content: String, timestamp: Long, isSynced: Boolean, syncFailed: Boolean): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -54,9 +53,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return id
     }
 
-    /**
-     * Fetch all notes from SQLite.
-     */
+ 
     fun getAllNotes(): List<Note> {
         val notesList = mutableListOf<Note>()
         val db = this.readableDatabase
@@ -79,9 +76,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return notesList
     }
 
-    /**
-     * Update the sync status of a note.
-     */
+
     fun updateNoteSyncStatus(id: Int, isSynced: Boolean, syncFailed: Boolean) {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -92,12 +87,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.close()
     }
 
-    /**
-     * Delete a note by its ID.
-     */
     fun deleteNote(id: Int) {
         val db = this.writableDatabase
         db.delete(TABLE_NOTES, "$COLUMN_ID = ?", arrayOf(id.toString()))
         db.close()
     }
 }
+*/
